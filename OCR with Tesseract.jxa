@@ -49,7 +49,7 @@ try {
 } catch(e) {
 	dt.hideProgressIndicator()
 
-	if (e.number != 128) {
+	if (e.number != -128) {
 		dt.displayAlert("An exception occured.", {
 			message: e.message,
 			as: "critical"

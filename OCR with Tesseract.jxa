@@ -1,0 +1,58 @@
+var app = Application.currentApplication()
+app.includeStandardAdditions = true
+
+var dt = Application("DEVONthink 3")
+dt.includeStandardAdditions = true
+
+function quotedForm(s) { return "'" + s.replace(/'/g, "'\\''") + "'" }
+
+var logFile = "$HOME/ocr.log"
+
+try {
+	var records = dt.selection()
+	// debugger
+
+	if (records.length > 0) {
+		var ocrParams = dt.displayDialog("OCR parameters", {
+			defaultAnswer: "-l deu+eng",
+			buttons: ["Cancel", "Continue"],
+			defaultButton: "Continue"
+		})["textReturned"]
+
+		dt.showProgressIndicator("Recognizing files", {
+			steps: records.length,
+			cancelButton: true
+		})
+
+		app.doShellScript(" > " + logFile)
+
+		records.forEach(function(record) {
+			dt.stepProgressIndicator(record.name())
+
+			if (dt.cancelledProgress()) {
+				return
+			}
+
+			if (record.type() == "PDF document") {
+				app.doShellScript("echo " + quotedForm(record.name()) + " >> " + logFile)
+
+				try {
+					app.doShellScript("eval $(/usr/libexec/path_helper); ocrmypdf " + ocrParams + " " + quotedForm(record.path()) + " " + quotedForm(record.path()) + " >> " + logFile + " 2>&1")
+				} catch(e) {}
+
+				app.doShellScript("echo '' >> " + logFile)
+			}
+		})
+
+		dt.hideProgressIndicator()
+	}
+} catch(e) {
+	dt.hideProgressIndicator()
+
+	if (e.number != 128) {
+		dt.displayAlert("An exception occured.", {
+			message: e.message,
+			as: "critical"
+		})
+	}
+}

@@ -10,7 +10,6 @@ var logFile = "$HOME/ocr.log"
 
 try {
 	var records = dt.selection()
-	// debugger
 
 	if (records.length > 0) {
 		var ocrParams = dt.displayDialog("OCR parameters", {
@@ -49,8 +48,8 @@ try {
 } catch(e) {
 	dt.hideProgressIndicator()
 
-	if (e.number != -128) {
-		dt.displayAlert("An exception occured.", {
+	if (e.errorNumber != -128) {
+		dt.displayAlert("Error " + e.errorNumber + " (" + e.line + ":" + e.column + ")", {
 			message: e.message,
 			as: "critical"
 		})

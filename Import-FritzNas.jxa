@@ -1,0 +1,62 @@
+var app = Application.currentApplication();
+app.includeStandardAdditions = true;
+
+var dt = Application("DEVONthink 3");
+dt.includeStandardAdditions = true;
+
+var finder = Application("Finder");
+finder.includeStandardAdditions = true;
+
+var sys = Application('System Events');
+sys.includeStandardAdditions = true;
+
+function quotedForm(s) {
+	return "'" + s.replace(/'/g, "'\\''") + "'";
+}
+
+var diskName = "FRITZBox"
+
+try {
+	var disks = finder.disks.where({
+		name: diskName
+	});
+
+	if (disks.length == 0) {
+		app.mountVolume("smb://fritz.nas");
+	}
+
+	var folder = "/Volumes/" + diskName + "/Scans/";
+	var records = sys.folders.byName(folder).diskItems.name();
+
+	dt.showProgressIndicator("Importing files", {
+		steps: records.length,
+		cancelButton: true
+	});
+
+	records.forEach(function(record) {
+		dt.stepProgressIndicator(record);
+
+		if (dt.cancelledProgress()) {
+			return;
+		}
+
+		var path = Path(folder + record);
+
+		dt.import(path.toString());
+		finder.delete(path);
+	});
+
+	dt.hideProgressIndicator();
+
+	finder.eject(diskName);
+
+} catch (e) {
+	dt.hideProgressIndicator();
+
+	if (e.errorNumber != -128) {
+		dt.displayAlert("Error " + e.errorNumber + " (" + e.line + ":" + e.column + ")", {
+			message: e.message,
+			as: "critical"
+		});
+	}
+}
